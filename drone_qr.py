@@ -5,11 +5,15 @@ import time
 import numpy as np
 
 # データ受け取り用の関数
+
+dist = 20 
+
+f = False
 def udp_receiver():
         global battery_text
         global time_text
         global status_text
-
+        global dist
         while True: 
             try:
                 data, server = sock.recvfrom(1518)
@@ -17,7 +21,7 @@ def udp_receiver():
                 # レスポンスが数字だけならバッテリー残量
                 if resp.isdecimal():    
                     battery_text = "Battery:" + resp + "%"
-                # 最後の文字がsなら飛行時間
+                # 最後の文字がsなら飛行時間 
                 elif resp[-1:] == "s":
                     time_text = "Time:" + resp
                 else: 
@@ -67,47 +71,79 @@ def down():
         except:
             pass
 # 前に進む(0cm)
-def forward():
+# def forward():
+#         try:
+#             print(f"moving forward by distance {dist}")
+#             sent = sock.sendto(f'forward {dist}'.encode(encoding="utf-8"), TELLO_ADDRESS)
+#         except:
+#             pass
+# # 後に進む(0cm)
+# def back():
+#         try:
+#             print(f"moving backwards by distance {dist}")
+#             sent = sock.sendto(f'back {dist}'.encode(encoding="utf-8"), TELLO_ADDRESS)
+#         except:
+#             pass
+# # 右に進む(0cm)
+# def right():
+#         try:
+#             print(f"moving backwards by distance {dist}")
+#             sent = sock.sendto(f'right {dist}'.encode(encoding="utf-8"), TELLO_ADDRESS)
+#         except:
+#             pass
+# # 左に進む(0cm)
+# def left():
+#         try:
+#             sent = sock.sendto('left {dist}'.encode(encoding="utf-8"), TELLO_ADDRESS)
+#         except:
+#             pass
+# # 右回りに回転(90 deg)
+# def cw():
+#         try:
+#             sent = sock.sendto('cw 45'.encode(encoding="utf-8"), TELLO_ADDRESS)
+#         except:
+#             pass
+# # 左回りに回転(90 deg)
+# def ccw():
+#         try:
+#             sent = sock.sendto('ccw 45'.encode(encoding="utf-8"), TELLO_ADDRESS)
+#         except:
+#             pass
+# # 速度変更(例：速度40cm/sec, 0 < speed < 100)
+
+def move(dist, dir):
         try:
-            sent = sock.sendto('forward 50'.encode(encoding="utf-8"), TELLO_ADDRESS)
+            sent = sock.sendto(f'{dir} {dist}'.encode(encoding="utf-8"), TELLO_ADDRESS)
+       
         except:
             pass
-# 後に進む(0cm)
-def back():
+
+def rotate(angle, dir,):
         try:
-            sent = sock.sendto('back 50'.encode(encoding="utf-8"), TELLO_ADDRESS)
+        
+            sent = sock.sendto(f'{dir} {angle}'.encode(encoding="utf-8"), TELLO_ADDRESS)
+     
         except:
             pass
-# 右に進む(0cm)
-def right():
-        try:
-            sent = sock.sendto('right 50'.encode(encoding="utf-8"), TELLO_ADDRESS)
-        except:
-            pass
-# 左に進む(0cm)
-def left():
-        try:
-            sent = sock.sendto('left 50'.encode(encoding="utf-8"), TELLO_ADDRESS)
-        except:
-            pass
-# 右回りに回転(90 deg)
-def cw():
-        try:
-            sent = sock.sendto('cw 90'.encode(encoding="utf-8"), TELLO_ADDRESS)
-        except:
-            pass
-# 左回りに回転(90 deg)
-def ccw():
-        try:
-            sent = sock.sendto('ccw 90'.encode(encoding="utf-8"), TELLO_ADDRESS)
-        except:
-            pass
-# 速度変更(例：速度40cm/sec, 0 < speed < 100)
-def set_speed(n=40):
+
+def set_speed(n=100):
         try:
             sent = sock.sendto(f'speed {n}'.encode(encoding="utf-8"), TELLO_ADDRESS)
         except:
             pass
+
+def shift_dist():
+     global dist
+     if dist == 20:
+          dist = 50
+     elif dist == 50:
+          dist = 100
+     elif dist == 100:
+          dist = 200
+     elif dist == 200:
+          dist=20
+     print(f'set disance to {dist}')
+    
 
 # Tello側のローカルIPアドレス(デフォルト)、宛先ポート番号(コマンドモード用)
 TELLO_IP = '192.168.10.1'
@@ -121,6 +157,7 @@ command_text = "None"
 battery_text = "Battery:"
 time_text = "Time:"
 status_text = "Status:"
+dist=20
 
 # キャプチャ用のオブジェクト
 cap = None
@@ -182,7 +219,7 @@ while True:
 
     # カメラ映像のサイズを半分にする
     frame_height, frame_width = frame.shape[:2]
-    frame_resized = cv2.resize(frame, (frame_width//3, frame_height//3))
+    frame_resized = cv2.resize(frame, (frame_width*4//3, frame_height*4//3))
     frame_output = frame_resized
 
     # qrコードの読み取り
@@ -234,59 +271,96 @@ while True:
             color=(0, 255, 0),
             thickness=1,
             lineType=cv2.LINE_4)
+    cv2.putText(frame_output,
+        text=dist,
+        org=(10, 100),
+        fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+        fontScale=0.5,
+        color=(0, 255, 0),
+        thickness=1,
+        lineType=cv2.LINE_4)
+    cv2.putText(frame_output,
+        text=dist,
+        org=(10, 120),
+        fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+        fontScale=0.5,
+        color=(0, 255, 0),
+        thickness=1,
+        lineType=cv2.LINE_4)
     # カメラ映像を画面に表示
     cv2.imshow('Tello Camera View', frame_output)
 
     # キー入力を取得
     key = cv2.waitKey(1)
 
-    # escキーで終了
-    if key == 27:
-        break
-    # wキーで前進
-    elif key == ord('w'):
-        forward()
-        command_text = "Forward"
-    # sキーで後進
-    elif key == ord('s'):
-        back()
-        command_text = "Back"
-    # aキーで左進
-    elif key == ord('a'):
-        left()
-        command_text = "Left"
-    # dキーで右進
-    elif key == ord('d'):
-        right()
-        command_text = "Right"
-    # tキーで離陸
-    elif key == ord('t'):
-        takeoff()
-        command_text = "Take off"
-    # lキーで着陸
-    elif key == ord('l'):
-        land()
-        command_text = "Land"
-    # rキーで上昇
-    elif key == ord('r'):
-        up()
-        command_text = "Up"
-    # cキーで下降
-    elif key == ord('c'):
-        down()
-        command_text = "Down"
-    # qキーで左回りに回転
-    elif key == ord('q'):
-        ccw()
-        command_text = "Ccw"
-    # eキーで右回りに回転
-    elif key == ord('e'):
-        cw()
-        command_text = "Cw"
-    # mキーで速度変更
-    elif key == ord('m'):
-        set_speed()
-        command_text = "Changed speed"
+
+    match key:
+        case 27: #esc
+              break
+        # wキーで前進
+        case ord('w'):
+            move(dist, 'forward')
+            command_text = "Forward"
+        case 2490368:
+            move(2*dist, 'forward')
+            command_text = "Forward (double)"
+        # sキーで後進
+        case ord('s'):
+            move(dist, 'back')
+            command_text = "Back"
+        case 2621440:
+            move(2*dist, 'back')
+            command_text = "Backward (double)"    
+        # aキーで左進
+        case ord('a'):
+            move(dist, 'left')
+            command_text = "Left"
+        case 2424832:
+            move(2*dist, 'left')
+            command_text = "Left (double)" 
+        # dキーで右進
+        case ord('a'):
+            move(dist, 'right')
+            command_text = "Left"
+        case 2555904:
+            move(2*dist, 'right')
+            command_text = "Right (double)" 
+        # tキーで離陸
+        case ord('t'):
+            takeoff()
+            command_text = "Take off"
+        # lキーで着陸
+        case ord('l'):
+            land()
+            command_text = "Land"
+        # rキーで上昇
+        case ord('r'):
+            up()
+            command_text = "Up"
+        # cキーで下降
+        case ord('c'):
+            down()
+            command_text = "Down"
+        # qキーで左回りに回転
+        case ord('q'):
+            rotate('45', 'ccw')
+            command_text = "Ccw 45"
+        case ord(','):
+            rotate('90', 'ccw')
+            command_text = "Ccw 90"
+        # eキーで右回りに回転
+        case ord('e'):
+            rotate('45', 'cw')
+            command_text = "Cw 45"
+        case ord('.'):
+            rotate('90', 'cw')
+            command_text = "Cw 90"
+        # mキーで速度変更
+        case ord('m'):
+            set_speed()
+            command_text = "Changed speed to 100"
+        case ord('1'):
+            shift_dist()
 
 cap.release()
 cv2.destroyAllWindows()
