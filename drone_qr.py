@@ -7,8 +7,8 @@ import numpy as np
 # データ受け取り用の関数
 
 dist = 20 
+height = 50
 
-f = False
 def udp_receiver():
         global battery_text
         global time_text
@@ -59,15 +59,21 @@ def land():
         except:
             pass
 # 上昇(20cm)
-def up():
-        try:
-            sent = sock.sendto('up 20'.encode(encoding="utf-8"), TELLO_ADDRESS)
-        except:
+# def up():
+#         try:
+#             sent = sock.sendto('up 20'.encode(encoding="utf-8"), TELLO_ADDRESS)
+#         except:
             pass
-# 下降(20cm)
-def down():
+# # 下降(20cm)
+# def down():
+#         try:
+#             sent = sock.sendto('down 20'.encode(encoding="utf-8"), TELLO_ADDRESS)
+#         except:
+#             pass
+
+def vertical(dir, d):
         try:
-            sent = sock.sendto('down 20'.encode(encoding="utf-8"), TELLO_ADDRESS)
+            sent = sock.sendto(f'{dir} {d}'.encode(encoding="utf-8"), TELLO_ADDRESS)
         except:
             pass
 # 前に進む(0cm)
@@ -143,7 +149,17 @@ def shift_dist():
      elif dist == 200:
           dist=20
      print(f'set disance to {dist}')
-    
+
+def shift_height():
+     global height
+     if height == 20:
+          height = 50
+     elif height == 50:
+          height = 100
+     elif height == 100:
+          height = 20
+     print(f'set disance to {height}')
+     
 
 # Tello側のローカルIPアドレス(デフォルト)、宛先ポート番号(コマンドモード用)
 TELLO_IP = '192.168.10.1'
@@ -272,7 +288,7 @@ while True:
             thickness=1,
             lineType=cv2.LINE_4)
     cv2.putText(frame_output,
-        text=dist,
+        text=f"distance: {str(dist)}",
         org=(10, 100),
         fontFace=cv2.FONT_HERSHEY_SIMPLEX,
         fontScale=0.5,
@@ -280,88 +296,96 @@ while True:
         thickness=1,
         lineType=cv2.LINE_4)
     cv2.putText(frame_output,
-        text=dist,
+        text=f"height: {str(height)}",
         org=(10, 120),
         fontFace=cv2.FONT_HERSHEY_SIMPLEX,
         fontScale=0.5,
         color=(0, 255, 0),
         thickness=1,
         lineType=cv2.LINE_4)
+
     # カメラ映像を画面に表示
     cv2.imshow('Tello Camera View', frame_output)
 
     # キー入力を取得
-    key = cv2.waitKey(1)
-
+    key = cv2.waitKeyEx(1)
+    print(key)
 
     match key:
         case 27: #esc
               break
         # wキーで前進
-        case ord('w'):
+        case k if k == (ord('w')):
             move(dist, 'forward')
             command_text = "Forward"
         case 2490368:
-            move(2*dist, 'forward')
+            move(1.5*dist, 'forward')
             command_text = "Forward (double)"
         # sキーで後進
-        case ord('s'):
+        case k if k ==  ord('s'):
             move(dist, 'back')
             command_text = "Back"
         case 2621440:
-            move(2*dist, 'back')
+            move(1.5*dist, 'back')
             command_text = "Backward (double)"    
         # aキーで左進
-        case ord('a'):
+        case k if k ==  ord('a'):
             move(dist, 'left')
             command_text = "Left"
         case 2424832:
-            move(2*dist, 'left')
+            move(1.5*dist, 'left')
             command_text = "Left (double)" 
         # dキーで右進
-        case ord('a'):
+        case k if k ==  ord('d'):
             move(dist, 'right')
             command_text = "Left"
         case 2555904:
-            move(2*dist, 'right')
+            move(1.5*dist, 'right')
             command_text = "Right (double)" 
         # tキーで離陸
-        case ord('t'):
+        case k if k ==  ord('t'):
             takeoff()
             command_text = "Take off"
         # lキーで着陸
-        case ord('l'):
+        case k if k ==  ord('l'):
             land()
             command_text = "Land"
         # rキーで上昇
-        case ord('r'):
-            up()
+        case k if k ==  ord('r'):
+            vertical('up', height)
+            command_text = "Up"
+        case k if k ==  ord('p'):
+            vertical('up', 1.5*height)
             command_text = "Up"
         # cキーで下降
-        case ord('c'):
-            down()
+        case k if k ==  ord('c'):
+            vertical('down', height)
+            command_text = "Down"
+        case k if k ==  ord('o'):
+            vertical('down', 1.5*height)
             command_text = "Down"
         # qキーで左回りに回転
-        case ord('q'):
+        case k if k ==  ord('q'):
             rotate('45', 'ccw')
             command_text = "Ccw 45"
-        case ord(','):
+        case k if k ==  ord(','):
             rotate('90', 'ccw')
             command_text = "Ccw 90"
         # eキーで右回りに回転
-        case ord('e'):
+        case k if k ==  ord('e'):
             rotate('45', 'cw')
             command_text = "Cw 45"
-        case ord('.'):
+        case k if k ==  ord('.'):
             rotate('90', 'cw')
             command_text = "Cw 90"
         # mキーで速度変更
-        case ord('m'):
+        case k if k ==  ord('m'):
             set_speed()
             command_text = "Changed speed to 100"
-        case ord('1'):
+        case k if k ==  ord('1'):
             shift_dist()
-
+        case k if k ==  ord('2'):
+            shift_height()
 cap.release()
 cv2.destroyAllWindows()
 
